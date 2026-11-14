@@ -1,6 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="96 116 1060 1060">
-  <rect x="96" y="116" width="1060" height="1060" rx="250" fill="#ffffff"/>
-  <polygon fill="#04356D" points="204,353 500,353 798,676 692,790 918,790 1048,938 685,938 559,800 651,699 449,480 316,480"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="176 196 900 900">
+  <style>
+    .navy { fill: #04356D; }
+    /* Dark browser tabs: navy would vanish, so that part turns white. */
+    @media (prefers-color-scheme: dark) { .navy { fill: #ffffff; } }
+  </style>
+  <polygon class="navy" points="204,353 500,353 798,676 692,790 918,790 1048,938 685,938 559,800 651,699 449,480 316,480"/>
   <polygon fill="#008CFB" points="766,353 1048,353 922,480 807,480 709,578 627,490"/>
   <path fill="#008CFB" d="M530,620 L613,713 L396,938 L211,938 Q395,800 530,620 Z"/>
 </svg>

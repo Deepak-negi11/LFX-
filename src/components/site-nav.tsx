@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, Info, SquaresFour } from "@phosphor-icons/react";
+import { LogoMark } from "./logo-mark";
 import { ThemeToggle } from "./theme-toggle";
 
 const LINKS = [
@@ -16,7 +17,8 @@ export function SiteNav() {
 
   return (
     <nav className="mx-auto flex h-16 max-w-[1440px] items-center gap-2 px-4 sm:px-6" aria-label="Main">
-      <Link href="/" className="group mr-2 flex items-center gap-2 sm:mr-6">
+      <Link href="/" className="group mr-2 flex items-center gap-2.5 sm:mr-6">
+        <LogoMark className="h-[22px] w-auto shrink-0 transition-transform duration-300 group-hover:scale-105" />
         <span className="font-display text-[22px] font-extrabold leading-none tracking-[-0.04em]" translate="no">
           {/* Two-tone: navy "LFX" + bright blue "Orgs"; in dark mode near-white "LFX" + bright blue "Orgs" */}
           <span className="text-[#0B3A75] dark:text-[#F2F4F7]">LFX</span>
