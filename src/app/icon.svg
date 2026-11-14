@@ -1,22 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#33ADFF"/>
-      <stop offset="1" stop-color="#0063B8"/>
-    </linearGradient>
-  </defs>
-  <rect width="32" height="32" rx="8" fill="url(#bg)"/>
-  <!-- "LFX" drawn as solid block letters (no font), so it stays crisp at tab size -->
-  <g fill="#ffffff">
-    <!-- L -->
-    <rect x="4.6" y="9.5" width="2.8" height="13"/>
-    <rect x="4.6" y="19.7" width="6.6" height="2.8"/>
-    <!-- F -->
-    <rect x="12.6" y="9.5" width="2.8" height="13"/>
-    <rect x="12.6" y="9.5" width="6.6" height="2.8"/>
-    <rect x="12.6" y="14.8" width="5.4" height="2.6"/>
-    <!-- X -->
-    <polygon points="20.2,9.5 23.2,9.5 27.6,22.5 24.6,22.5"/>
-    <polygon points="24.6,9.5 27.6,9.5 23.2,22.5 20.2,22.5"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="96 116 1060 1060">
+  <rect x="96" y="116" width="1060" height="1060" rx="250" fill="#ffffff"/>
+  <polygon fill="#04356D" points="204,353 500,353 798,676 692,790 918,790 1048,938 685,938 559,800 651,699 449,480 316,480"/>
+  <polygon fill="#008CFB" points="766,353 1048,353 922,480 807,480 709,578 627,490"/>
+  <path fill="#008CFB" d="M530,620 L613,713 L396,938 L211,938 Q395,800 530,620 Z"/>
 </svg>
