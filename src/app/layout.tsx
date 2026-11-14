@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { SiteNav } from "@/components/site-nav";
 import { themeInitScript } from "@/components/theme-toggle";
 import { getSite } from "@/lib/data";
@@ -69,6 +70,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <main id="main" className="flex-1">
           {children}
         </main>
+        {/* Vercel Web Analytics: cookie-free page views; does nothing outside Vercel. */}
+        <Analytics />
       </body>
     </html>
   );
