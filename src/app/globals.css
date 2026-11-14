@@ -173,6 +173,20 @@ h3 {
 .animate-fade-in {
   animation: fade-in 0.45s ease both;
 }
+@keyframes grow-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+/* Bars grow up from the bottom. */
+.animate-grow-y {
+  transform-origin: bottom center;
+  animation: grow-y 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0ms);
+}
 /* Bars grow from the left. */
 .animate-grow-x {
   transform-origin: left center;
