@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LFX Orgs
 
-## Getting Started
+An unofficial explorer for [LFX Mentorship](https://mentorship.linuxfoundation.org/). The official site lists
+programs one by one. This site groups them by organization, so you can see:
 
-First, run the development server:
+- which orgs took part in which years (2020 onward)
+- every past project of an org, with skills, mentors and selected mentees
+- which programs were paid (from the sponsors listed on LFX)
+- which programs are accepting applications right now, with deadlines
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Filters (year, "came every selected year", foundation, skills, paid only, accepting now) are saved in the URL,
+so a filtered view can be shared as a link.
+
+Not affiliated with the Linux Foundation.
+
+## How it works
+
+```
+LFX public API ──> scripts/crawl.mjs ──> data/raw/*.json ──> scripts/build-data.mjs ──> src/data/site.json ──> next build ──> out/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. `scripts/crawl.mjs` reads every program from the API the LFX site itself uses
+   (`/api/programs`, plus `/mentees` and `/sponsors` per program). It runs 4 requests at a time with a pause
+   between them. Finished programs that haven't changed are reused from the last crawl, so a daily run takes
+   about 2 minutes.
+2. `scripts/build-data.mjs` groups programs into orgs. CNCF and LF Decentralized Trust programs are grouped by
+   project name (from the title, a known-project list, or the GitHub repo), and other foundations are one org each.
+   It also works out paid status: paid if a sponsor gave money, unpaid if not or if the title says unpaid.
+3. Next.js builds a fully static site (one page per org) into `out/`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run it locally
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+bun install
+bun run update   # crawl LFX + build site data (first full crawl takes ~6 minutes)
+bun run dev      # http://localhost:3000 (or the next free port)
+bun run build    # static site in out/
+```
 
-## Learn More
+`src/data/site.json` is committed, so `bun run dev` works without crawling first.
 
-To learn more about Next.js, take a look at the following resources:
+## Daily auto-update (GitHub Pages)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`.github/workflows/update.yml` runs every day at 02:30 UTC (and on every push to `main`, or by hand from the Actions tab).
+It crawls LFX, rebuilds the data and deploys the site to GitHub Pages. New programs appear the day after LFX lists them.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+To turn it on:
 
-## Deploy on Vercel
+1. Push this repo to GitHub.
+2. Go to **Settings → Pages** and set **Source** to **GitHub Actions**.
+3. Run the workflow once from the **Actions** tab.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Keep-alive (no editing needed between seasons)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+GitHub pauses scheduled workflows in a repo with no commits for 60 days. The workflow guards against that in two ways:
+
+1. **Every daily run**, a small `keepalive` job re-enables the workflow through the GitHub API. No commits.
+2. **On the 1st of each month**, the build job commits the fresh `src/data/site.json` as
+   `chore(data): monthly LFX data snapshot` (author: `github-actions[bot]`). At most 12 commits a year, and you get
+   a monthly history of the data. This commit does not trigger another run.
+
+If your `main` branch is protected so that bots can't push, the monthly snapshot step fails. Either allow
+`github-actions[bot]` to push or remove that step; the API keep-alive still runs.
+
+### Notes
+
+- The LFX API is not documented and can change. If the crawl fails, the workflow fails (GitHub emails you)
+  and the last good deploy stays online.
+- New CNCF projects are grouped automatically from titles like `CNCF - Project: ...`. A new LF Decentralized
+  Trust project whose title and repo don't name it lands in "(other projects)" until you add its name to
+  `KNOWN_PROJECTS` in `scripts/build-data.mjs`.
+
+## Known gaps
+
+- Some LF Decentralized Trust 2025 programs are missing from LFX itself, so they're missing here too.
+- A few programs can't be matched to a project and sit under "(other projects)".
+- The paid amount is the total sponsorship of a program, not one mentee's stipend.
+
+## Privacy
+
+Only mentee names and terms (already public on LFX) are shown. No photos, intros or contact details are stored
+in the site data. Removal requests: open an issue.

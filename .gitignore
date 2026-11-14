@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# raw crawl output (large; rebuilt by `bun run crawl`, cached in CI)
+/data/raw/

@@ -1,0 +1,116 @@
+name: Update data and deploy
+
+# Runs every day, so new LFX programs and terms show up on the site soon after
+# LFX lists them. Can also be run by hand from the Actions tab.
+on:
+  schedule:
+    - cron: "30 2 * * *" # 02:30 UTC daily
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+# Nothing by default; each job asks only for what it needs.
+permissions: {}
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # monthly data snapshot commit (see below)
+      pages: write # actions/configure-pages
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.13
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - run: bun install --frozen-lockfile
+
+      # Reuse the last crawl so finished programs aren't fetched again.
+      - name: Restore previous crawl
+        uses: actions/cache/restore@v4
+        with:
+          path: data/raw
+          key: lfx-raw-${{ github.run_id }}
+          restore-keys: lfx-raw-
+
+      - name: Crawl LFX Mentorship
+        run: node scripts/crawl.mjs
+
+      - name: Save crawl
+        uses: actions/cache/save@v4
+        with:
+          path: data/raw
+          key: lfx-raw-${{ github.run_id }}
+
+      - name: Build site data
+        run: node scripts/build-data.mjs
+
+      # Keep-alive, part 2: on the 1st of each month commit the fresh data, so the repo
+      # never goes 60 days without a commit (GitHub pauses scheduled workflows after that).
+      # Commits made with GITHUB_TOKEN do not trigger this workflow again.
+      - name: Monthly data snapshot
+        if: github.event_name == 'schedule'
+        run: |
+          if [ "$(date -u +%d)" != "01" ]; then
+            echo "Not the 1st of the month, no snapshot today."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/site.json
+          if git diff --cached --quiet; then
+            echo "Data unchanged, nothing to commit."
+            exit 0
+          fi
+          git commit -m "chore(data): monthly LFX data snapshot"
+          git push
+
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Build site
+        run: bun run build
+        env:
+          # e.g. "/lfx-explorer" on github.io project pages, "" with a custom domain
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Keep-alive, part 1: re-enable this workflow through the GitHub API on every scheduled
+  # run. This is how common keep-alive tools stop GitHub's 60-day inactivity pause, with
+  # no commits. Runs on its own, so it still happens on days the crawl or build fails.
+  keepalive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-enable the daily schedule
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PUT "repos/${{ github.repository }}/actions/workflows/update.yml/enable"
