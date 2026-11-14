@@ -4,6 +4,7 @@ import { Explorer } from "@/components/explorer";
 import { OpenNow } from "@/components/open-now";
 import { OrgLogo } from "@/components/org-logo";
 import { getOpenPrograms, getOrgSummaries, getSite } from "@/lib/data";
+import { absUrl, jsonLd, SITE_NAME } from "@/lib/site";
 
 /** Stagger helper for the entrance animation. */
 const delay = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
@@ -24,6 +25,22 @@ export default function Home() {
 
   return (
     <Explorer orgs={orgs} years={site.years} foundations={site.foundations} skills={site.skills}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLd({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: SITE_NAME,
+          url: absUrl("/"),
+          description: "Unofficial explorer for Linux Foundation LFX Mentorship organizations and their past projects.",
+          inLanguage: "en",
+          potentialAction: {
+            "@type": "SearchAction",
+            target: { "@type": "EntryPoint", urlTemplate: `${absUrl("/")}?q={search_term_string}` },
+            "query-input": "required name=search_term_string",
+          },
+        })}
+      />
       <section
         aria-labelledby="page-title"
         className="relative isolate -mx-4 overflow-hidden px-4 pb-6 pt-12 text-center sm:-mx-6 sm:px-6 sm:pt-16 md:-mx-8 md:px-8"

@@ -39,36 +39,59 @@ bun run build    # static site in out/
 
 `src/data/site.json` is committed, so `bun run dev` works without crawling first.
 
-## Daily auto-update (GitHub Pages)
+## Deploy on Vercel
 
-`.github/workflows/update.yml` runs every day at 02:30 UTC (and on every push to `main`, or by hand from the Actions tab).
-It crawls LFX, rebuilds the data and deploys the site to GitHub Pages. New programs appear the day after LFX lists them.
+1. On [vercel.com](https://vercel.com), choose **Add New → Project** and import this GitHub repo.
+2. Keep the detected settings (Next.js, `bun install`, `next build`) and deploy.
+3. Optional, for a custom domain: add it in Vercel, then set the environment variable `SITE_URL`
+   (for example `https://lfxorgs.dev`). Without it, links in the sitemap and share images use Vercel's
+   production domain automatically (`VERCEL_PROJECT_PRODUCTION_URL`).
 
-To turn it on:
+`vercel.json` makes Vercel serve the generated share images (`/opengraph-image`, `/org/<slug>/opengraph-image`)
+as `image/png`.
 
-1. Push this repo to GitHub.
-2. Go to **Settings → Pages** and set **Source** to **GitHub Actions**.
-3. Run the workflow once from the **Actions** tab.
+The site is a plain static export (`out/`), so any static host works too. For a sub-path such as GitHub Pages
+project sites, build with `BASE_PATH=/repo-name SITE_URL=https://user.github.io/repo-name`.
+
+## Daily data update
+
+`.github/workflows/update.yml` runs every day at 02:30 UTC (or by hand from the **Actions** tab):
+
+1. crawls LFX and rebuilds `src/data/site.json`
+2. builds the site, so broken data is never committed
+3. commits `src/data/site.json` as `chore(data): update LFX Mentorship data` (author `github-actions[bot]`),
+   **only if the data really changed** (timestamps alone don't count; see `scripts/data-changed.mjs`)
+
+Vercel redeploys on every commit, so new programs show up the day after LFX lists them.
 
 ### Keep-alive (no editing needed between seasons)
 
-GitHub pauses scheduled workflows in a repo with no commits for 60 days. The workflow guards against that in two ways:
+GitHub pauses scheduled workflows in a repo with no commits for 60 days. Data commits usually prevent that, and a
+small `keepalive` job also re-enables the workflow through the GitHub API on every scheduled run (no commits), so
+quiet months between LFX seasons are covered too.
 
-1. **Every daily run**, a small `keepalive` job re-enables the workflow through the GitHub API. No commits.
-2. **On the 1st of each month**, the build job commits the fresh `src/data/site.json` as
-   `chore(data): monthly LFX data snapshot` (author: `github-actions[bot]`). At most 12 commits a year, and you get
-   a monthly history of the data. This commit does not trigger another run.
-
-If your `main` branch is protected so that bots can't push, the monthly snapshot step fails. Either allow
-`github-actions[bot]` to push or remove that step; the API keep-alive still runs.
+If `main` is protected so bots can't push, allow `github-actions[bot]` to push, or the data commit step fails.
 
 ### Notes
 
 - The LFX API is not documented and can change. If the crawl fails, the workflow fails (GitHub emails you)
-  and the last good deploy stays online.
+  and the site keeps the last good data.
 - New CNCF projects are grouped automatically from titles like `CNCF - Project: ...`. A new LF Decentralized
   Trust project whose title and repo don't name it lands in "(other projects)" until you add its name to
   `KNOWN_PROJECTS` in `scripts/build-data.mjs`.
+
+## SEO
+
+- Titles, descriptions and canonical links for every page, built from the real numbers (org pages:
+  "Kubernetes LFX Mentorship projects (2020 to 2026)").
+- Share images (Open Graph / X cards) for the home page and every org, generated at build time with the site fonts.
+- `sitemap.xml` (home, about, every org with its last-change date), `robots.txt`, web manifest.
+- Structured data: `WebSite` with a search action (`/?q=`), and `BreadcrumbList` + `ItemList` of programs on
+  org pages.
+- Static HTML: every org card and page is in the HTML, so search engines see it without running JavaScript.
+
+After the first deploy, add the site in [Google Search Console](https://search.google.com/search-console) and
+submit `https://<your-domain>/sitemap.xml`.
 
 ## Known gaps
 

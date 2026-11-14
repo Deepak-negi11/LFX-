@@ -7,6 +7,7 @@ import { OrgLogo } from "@/components/org-logo";
 import { YearStack } from "@/components/year-stack";
 import { PaidTag } from "@/components/open-now";
 import { formatDate, getOrg, getSite } from "@/lib/data";
+import { absUrl, jsonLd, SITE_NAME } from "@/lib/site";
 import type { Program } from "@/lib/types";
 
 export const dynamicParams = false;
@@ -19,10 +20,23 @@ export async function generateMetadata({ params }: PageProps<"/org/[slug]">): Pr
   const { slug } = await params;
   const org = getOrg(slug);
   if (!org) return {};
+  const span = yearSpan(org.years);
+  const title = `${org.name} LFX Mentorship projects (${span})`;
+  const skills = org.skills.slice(0, 4).join(", ");
+  const description = `${org.programCount} LFX Mentorship program${org.programCount === 1 ? "" : "s"} from ${org.name} (${org.foundation}), ${span}: ${org.paidCount} paid, ${org.menteeCount} mentees selected.${skills ? ` Skills: ${skills}.` : ""} Past projects by year.`;
+  const path = `/org/${org.slug}/`;
   return {
-    title: `${org.name} in LFX Mentorship`,
-    description: `${org.programCount} LFX Mentorship programs from ${org.name} (${org.years.length > 1 ? `${org.years[0]} to ${org.years.at(-1)}` : org.years[0]}), with skills, paid status and selected mentees.`,
+    title,
+    description,
+    alternates: { canonical: path },
+    openGraph: { type: "website", url: path, title, description, siteName: SITE_NAME },
+    twitter: { card: "summary_large_image", title, description },
   };
+}
+
+function yearSpan(years: number[]) {
+  if (years.length === 0) return "all years";
+  return years.length > 1 ? `${years[0]} to ${years.at(-1)}` : String(years[0]);
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -44,6 +58,15 @@ export default async function OrgPage({ params }: PageProps<"/org/[slug]">) {
   }
   const yearsDesc = [...byYear.keys()].sort((a, b) => b - a);
   const repo = org.programs.find((p) => p.repoUrl?.includes("github.com"))?.repoUrl;
+  const topSkills = org.skills.slice(0, 5);
+  // Plain-language summary: useful for readers and for search engines.
+  const summary = `${org.name} (${org.foundation}) has run ${org.programCount} LFX Mentorship program${
+    org.programCount === 1 ? "" : "s"
+  } across ${org.years.length} year${org.years.length === 1 ? "" : "s"} (${org.years.join(", ")}). ${org.paidCount} ${
+    org.paidCount === 1 ? "was" : "were"
+  } paid and ${org.menteeCount} mentee${org.menteeCount === 1 ? " was" : "s were"} selected.${
+    topSkills.length ? ` Most asked-for skills: ${topSkills.join(", ")}.` : ""
+  }`;
   const repoHome = repo?.match(/^https:\/\/github\.com\/[^/]+(?:\/[^/#?]+)?/)?.[0];
 
   return (
@@ -78,6 +101,36 @@ export default async function OrgPage({ params }: PageProps<"/org/[slug]">) {
           )}
         </div>
       </header>
+
+      <p className="animate-fade-up mt-6 max-w-[70ch] leading-relaxed text-muted" style={{ "--d": "40ms" } as CSSProperties}>
+        {summary}
+      </p>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLd([
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Organizations", item: absUrl("/") },
+              { "@type": "ListItem", position: 2, name: org.name, item: absUrl(`/org/${org.slug}/`) },
+            ],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            name: `${org.name} LFX Mentorship programs`,
+            numberOfItems: org.programCount,
+            itemListElement: org.programs.slice(0, 100).map((p, i) => ({
+              "@type": "ListItem",
+              position: i + 1,
+              name: p.title,
+              url: p.url,
+            })),
+          },
+        ])}
+      />
 
       <dl
         className="animate-fade-up mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-4"

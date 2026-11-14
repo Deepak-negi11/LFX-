@@ -2,15 +2,49 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import { SiteNav } from "@/components/site-nav";
 import { themeInitScript } from "@/components/theme-toggle";
+import { getSite } from "@/lib/data";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ variable: "--font-jakarta", subsets: ["latin"], display: "swap" });
 const bricolage = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"], display: "swap" });
 
+const site = getSite();
+const DESCRIPTION = `Unofficial explorer for Linux Foundation LFX Mentorship. Browse ${site.orgs.length} organizations and ${site.programCount.toLocaleString("en-US")} programs since ${site.years[0]}: past projects by year, required skills, paid or unpaid, and selected mentees.`;
+
 export const metadata: Metadata = {
-  title: { default: "LFX Orgs: browse every LFX Mentorship org by year", template: "%s | LFX Orgs" },
-  description:
-    "Unofficial explorer for LFX Mentorship. See which organizations took part each year, their past projects, skills, paid status and selected mentees.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "LFX Mentorship organizations, year by year | LFX Orgs",
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: [
+    "LFX Mentorship",
+    "Linux Foundation mentorship",
+    "LFX Mentorship organizations",
+    "CNCF mentorship",
+    "LF Decentralized Trust mentorship",
+    "paid open source internship",
+    "open source mentorship projects",
+  ],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    locale: "en_US",
+    url: "/",
+    title: "LFX Mentorship organizations, year by year",
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LFX Mentorship organizations, year by year",
+    description: DESCRIPTION,
+  },
+  robots: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+  formatDetection: { telephone: false, email: false, address: false },
 };
 
 export const viewport: Viewport = { themeColor: "#ffffff" };

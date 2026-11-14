@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { formatDate, getSite } from "@/lib/data";
 
 export const metadata: Metadata = {
-  title: "About",
-  description: "Where the data comes from, how often it updates, and how paid status is worked out.",
+  title: "About this LFX Mentorship explorer",
+  description:
+    "Where the LFX Orgs data comes from, how often it updates, how paid and unpaid LFX Mentorship programs are detected, and how organizations are grouped.",
+  alternates: { canonical: "/about/" },
+  openGraph: { url: "/about/" },
 };
 
 export default function About() {

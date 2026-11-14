@@ -1,27 +1,25 @@
-name: Update data and deploy
+name: Update LFX data
 
-# Runs every day, so new LFX programs and terms show up on the site soon after
-# LFX lists them. Can also be run by hand from the Actions tab.
+# Runs every day: crawls LFX Mentorship, rebuilds the site data and, if anything really
+# changed, commits it. Vercel redeploys the site on every commit, so new programs and
+# terms show up the day after LFX lists them. Can also be run by hand from the Actions tab.
 on:
   schedule:
     - cron: "30 2 * * *" # 02:30 UTC daily
   workflow_dispatch:
-  push:
-    branches: [main]
 
 # Nothing by default; each job asks only for what it needs.
 permissions: {}
 
 concurrency:
-  group: pages
+  group: data-update
   cancel-in-progress: false
 
 jobs:
-  build:
+  update:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # monthly data snapshot commit (see below)
-      pages: write # actions/configure-pages
+      contents: write # commit the updated data
     steps:
       - uses: actions/checkout@v4
 
@@ -55,55 +53,26 @@ jobs:
       - name: Build site data
         run: node scripts/build-data.mjs
 
-      # Keep-alive, part 2: on the 1st of each month commit the fresh data, so the repo
-      # never goes 60 days without a commit (GitHub pauses scheduled workflows after that).
-      # Commits made with GITHUB_TOKEN do not trigger this workflow again.
-      - name: Monthly data snapshot
-        if: github.event_name == 'schedule'
+      # Never commit data that would break the site.
+      - name: Check the site still builds
+        run: bun run build
+
+      # Commit only real changes (timestamps alone don't count). These commits also keep
+      # the repo active, so GitHub doesn't pause this schedule.
+      - name: Commit updated data
         run: |
-          if [ "$(date -u +%d)" != "01" ]; then
-            echo "Not the 1st of the month, no snapshot today."
+          if ! node scripts/data-changed.mjs; then
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/data/site.json
-          if git diff --cached --quiet; then
-            echo "Data unchanged, nothing to commit."
-            exit 0
-          fi
-          git commit -m "chore(data): monthly LFX data snapshot"
+          git commit -m "chore(data): update LFX Mentorship data"
           git push
 
-      - id: pages
-        uses: actions/configure-pages@v5
-
-      - name: Build site
-        run: bun run build
-        env:
-          # e.g. "/lfx-explorer" on github.io project pages, "" with a custom domain
-          BASE_PATH: ${{ steps.pages.outputs.base_path }}
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: out
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
-
-  # Keep-alive, part 1: re-enable this workflow through the GitHub API on every scheduled
-  # run. This is how common keep-alive tools stop GitHub's 60-day inactivity pause, with
-  # no commits. Runs on its own, so it still happens on days the crawl or build fails.
+  # Keep-alive: GitHub pauses scheduled workflows in repos with no commits for 60 days
+  # (possible between LFX seasons). Re-enabling the workflow through the API on every
+  # scheduled run prevents that, with no commits. Runs even if the crawl fails.
   keepalive:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
